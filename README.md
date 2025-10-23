@@ -6,16 +6,22 @@ A React Native chat application built with Expo and React Navigation. This app a
 
 - **Start Screen**:
 
-  - Text input for user name
+  - Text input for user name with validation
   - Color picker with 4 background color options
-  - Elegant UI with styled components
-  - Form validation (name required)
+  - Elegant UI with styled components and shadows
+  - Form validation (name required before proceeding)
+  - Keyboard handling to prevent UI coverage
 
 - **Chat Screen**:
 
+  - **Full Chat Functionality**: Powered by Gifted Chat library
+  - **Real-time Messaging**: Send and receive messages instantly
+  - **System Messages**: Automatic "user entered chat" notification
+  - **Custom Message Bubbles**: Styled to match app theme
+  - **User Avatars**: Profile pictures for each message
+  - **Keyboard Handling**: Smart keyboard avoidance for better UX
   - Displays user's name in the navigation header
   - Background color matches user's selection from start screen
-  - Placeholder for future chat functionality
 
 - **Navigation**:
   - Stack navigation between Start and Chat screens
@@ -27,7 +33,9 @@ A React Native chat application built with Expo and React Navigation. This app a
 - **React Native**: Mobile app framework
 - **Expo**: Development platform and toolchain
 - **React Navigation**: Navigation library for screen transitions
-- **React Hooks**: useState and useEffect for state management
+- **Gifted Chat**: Complete chat UI and functionality library
+- **React Hooks**: useState, useEffect, and useCallback for state management
+- **KeyboardAvoidingView**: Cross-platform keyboard handling
 
 ## Installation
 
@@ -44,9 +52,10 @@ A React Native chat application built with Expo and React Navigation. This app a
    npm install
    ```
 
-3. Install required navigation packages:
+3. Install required packages:
    ```bash
    npx expo install react-native-screens react-native-safe-area-context
+   npm install react-native-gifted-chat --save
    ```
 
 ## Running the App
@@ -90,12 +99,15 @@ chat-demo/
 
 ## Future Enhancements
 
-- Chat messaging functionality
-- User authentication
-- Message persistence
-- Group chat features
-- Image sharing
-- Push notifications
+- ✅ ~~Chat messaging functionality~~ (Implemented with Gifted Chat)
+- User authentication and login system
+- Message persistence with database storage
+- Group chat and multiple chat rooms
+- Image and file sharing capabilities
+- Push notifications for new messages
+- Online status indicators
+- Message read receipts
+- Custom emoji reactions
 
 ## Development Notes
 
@@ -107,6 +119,8 @@ chat-demo/
 
 ## Requirements Met
 
+### Exercise 5.3 - Navigation & UI Setup
+
 ✅ Two screens (Start.js and Chat.js) in components folder  
 ✅ Text input field for user name  
 ✅ Navigation button to chat screen  
@@ -115,19 +129,31 @@ chat-demo/
 ✅ Color selection with circular color options  
 ✅ React Navigation setup  
 ✅ Name display in navigation header  
-✅ Background color passing between screens  
-✅ Code comments for clarity
+✅ Background color passing between screens
+
+### Exercise 5.4 - Chat Functionality
+
+✅ Gifted Chat library installation and integration  
+✅ Messages state with useState()  
+✅ Initial system and user messages in useEffect()  
+✅ KeyboardAvoidingView for Android and iOS  
+✅ KeyboardAvoidingView added to Start screen  
+✅ Comprehensive code comments throughout  
+✅ Functional chat interface with message sending
 
 ## Testing
 
 The app has been tested with:
 
 - Form validation (empty name handling)
-- Navigation between screens
-- Data passing (name and color)
-- UI responsiveness
-- Accessibility features
+- Navigation between screens with parameter passing
+- Chat message sending and receiving
+- System message display on chat entry
+- Keyboard behavior on both screens
+- UI responsiveness across different screen sizes
+- Cross-platform compatibility (iOS/Android behavior)
+- Accessibility features and labels
 
 ---
 
-**Note**: This is Exercise 5.3 implementation focusing on navigation and UI setup. Chat functionality will be implemented in subsequent exercises.
+**Note**: This implementation includes both Exercise 5.3 (navigation setup) and Exercise 5.4 (chat functionality with Gifted Chat).

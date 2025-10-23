@@ -40,13 +40,26 @@ const App = () => {
   );
 }
 
-export default App;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#2C3E50',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 20,
+  },
+  text: {
+    fontSize: 28,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  subText: {
+    fontSize: 18,
+    color: '#BDC3C7',
+    textAlign: 'center',
   },
 });
+
+export default App;

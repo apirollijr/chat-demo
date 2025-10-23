@@ -1,3 +1,21 @@
+/**
+ * Start Screen Component
+ * 
+ * This is the initial screen of the chat app where users can:
+ * - Enter their name in a text input field
+ * - Select a background color for the chat screen from 4 predefined options
+ * - Navigate to the chat screen with their personalized settings
+ * 
+ * Features:
+ * - Form validation to ensure name is entered before proceeding
+ * - Color selection with visual feedback for selected color
+ * - Keyboard handling to prevent UI elements from being covered
+ * - Elegant design with shadows and proper spacing
+ * - Accessibility support with proper labels and roles
+ * 
+ * Navigation: Passes user's name and selected background color to Chat screen
+ */
+
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -5,42 +23,59 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert
+  Alert,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 
 const Start = ({ navigation }) => {
+  // State to store the user's name input
   const [name, setName] = useState('');
-  const [selectedColor, setSelectedColor] = useState('#090C08'); // Default color
+  
+  // State to store the selected background color (defaults to black)
+  const [selectedColor, setSelectedColor] = useState('#090C08');
 
   // Available background colors for the chat screen
+  // These colors provide good contrast and readability for chat messages
   const backgroundColors = [
-    '#090C08', // Black
-    '#474056', // Dark Purple
-    '#8A95A5', // Blue Gray
-    '#B9C6AE'  // Light Green
+    '#090C08', // Black - Classic and professional
+    '#474056', // Dark Purple - Modern and sleek
+    '#8A95A5', // Blue Gray - Calm and neutral
+    '#B9C6AE'  // Light Green - Fresh and natural
   ];
 
-  // Function to handle starting the chat
+  /**
+   * Function to handle starting the chat
+   * Validates that the user has entered a name before navigating
+   * Passes both the name and selected color to the Chat screen
+   */
   const startChat = () => {
+    // Validate that name is not empty (after trimming whitespace)
     if (name.trim() === '') {
       Alert.alert('Please enter your name', 'You need to enter a name to start chatting.');
       return;
     }
-    // Navigate to chat screen with name and selected color
+    
+    // Navigate to chat screen with user data
     navigation.navigate('Chat', { 
-      name: name.trim(), 
+      name: name.trim(), // Remove any leading/trailing whitespace
       backgroundColor: selectedColor 
     });
   };
 
   return (
     <View style={styles.backgroundContainer}>
-      <View style={styles.container}>
-        {/* Title */}
-        <Text style={styles.title}>Chat App</Text>
-        
-        {/* Input Section */}
-        <View style={styles.inputContainer}>
+      {/* KeyboardAvoidingView prevents keyboard from covering the input fields */}
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={styles.container}>
+          {/* Title */}
+          <Text style={styles.title}>Chat App</Text>
+          
+          {/* Input Section */}
+          <View style={styles.inputContainer}>
           <TextInput
             style={styles.textInput}
             value={name}
@@ -80,6 +115,7 @@ const Start = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </View>
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -88,6 +124,10 @@ const styles = StyleSheet.create({
   backgroundContainer: {
     flex: 1,
     backgroundColor: '#2C3E50', // Beautiful dark blue-gray background
+  },
+  // KeyboardAvoidingView to handle keyboard behavior on start screen
+  keyboardAvoidingView: {
+    flex: 1,
   },
   container: {
     flex: 1,

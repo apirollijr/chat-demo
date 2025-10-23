@@ -1,14 +1,34 @@
-import React, { useEffect } from 'react';
+/**
+ * Chat Screen Component
+ * 
+ * This component implements a fully functional chat interface using the Gifted Chat library.
+ * Features include:
+ * - Real-time messaging with GiftedChat
+ * - Custom message bubbles with theme colors
+ * - System messages for user join notifications
+ * - Keyboard handling for better UX across platforms
+ * - Custom navigation header with user's name and selected background color
+ * 
+ * Props received from navigation:
+ * - name: User's name entered on the start screen
+ * - backgroundColor: Selected background color from the start screen
+ */
+
+import { useState, useEffect, useCallback } from "react";
 import {
   StyleSheet,
   View,
-  Text,
-  TouchableOpacity
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
+import { GiftedChat } from "react-native-gifted-chat";
 
 const Chat = ({ route, navigation }) => {
   // Extract the name and backgroundColor from route parameters
   const { name, backgroundColor } = route.params;
+  
+  // State to store chat messages
+  const [messages, setMessages] = useState([]);
 
   // Set the navigation header title to display the user's name
   useEffect(() => {
@@ -24,99 +44,90 @@ const Chat = ({ route, navigation }) => {
     });
   }, [navigation, name, backgroundColor]);
 
+  // Initialize messages when component mounts
+  useEffect(() => {
+    setMessages([
+      // User message (appears first due to reverse chronological order)
+      {
+        _id: 2,
+        text: `Hello! My name is ${name}. I'm excited to start chatting!`,
+        createdAt: new Date(),
+        user: {
+          _id: 1,
+          name: name,
+          avatar: 'https://placeimg.com/140/140/any', // Placeholder avatar
+        },
+      },
+      // System message (appears second due to reverse chronological order)
+      {
+        _id: 1,
+        text: `${name} has entered the chat`,
+        createdAt: new Date(),
+        system: true, // This makes it a system message
+      },
+    ]);
+  }, [name]);
+
+  // Callback function to handle sending new messages
+  const onSend = useCallback((newMessages = []) => {
+    setMessages(previousMessages => 
+      GiftedChat.append(previousMessages, newMessages)
+    );
+  }, []);
+
   return (
     <View style={[styles.container, { backgroundColor: backgroundColor }]}>
-      {/* Welcome message */}
-      <View style={styles.messageContainer}>
-        <Text style={styles.welcomeText}>
-          Welcome to the chat, {name}!
-        </Text>
-        <Text style={styles.infoText}>
-          This is where your chat messages will appear.
-        </Text>
-      </View>
-
-      {/* Placeholder for future chat functionality */}
-      <View style={styles.chatArea}>
-        <Text style={styles.placeholderText}>
-          Chat functionality will be implemented in the next exercise.
-        </Text>
-      </View>
-
-      {/* Back button */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-        accessible={true}
-        accessibilityLabel="Go back to start screen"
-        accessibilityRole="button"
+      {/* KeyboardAvoidingView ensures the keyboard doesn't cover the input field */}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        <Text style={styles.backButtonText}>Back to Start</Text>
-      </TouchableOpacity>
+        {/* GiftedChat component handles all chat functionality */}
+        <GiftedChat
+          messages={messages}
+          onSend={messages => onSend(messages)}
+          user={{
+            _id: 1,
+            name: name,
+            avatar: 'https://placeimg.com/140/140/any', // Placeholder avatar
+          }}
+          // Custom styling for the input toolbar
+          textInputStyle={styles.textInput}
+          // Placeholder text for the input
+          placeholder="Type a message..."
+          // Show user avatars
+          showUserAvatar={true}
+          // Show timestamp for each message
+          showAvatarForEveryMessage={true}
+        />
+      </KeyboardAvoidingView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  // Main container that fills the entire screen
   container: {
     flex: 1,
-    padding: 20,
   },
-  messageContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  infoText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  chatArea: {
+  
+  // KeyboardAvoidingView to handle keyboard behavior
+  keyboardAvoidingView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 20,
   },
-  placeholderText: {
-    fontSize: 16,
-    color: '#fff',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  backButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 5,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    alignItems: 'center',
+  
+  // Custom styling for the text input field
+  textInput: {
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  backButtonText: {
-    color: '#fff',
+    borderColor: '#E5E5EA',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
     fontSize: 16,
-    fontWeight: '600',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 10,
+    marginVertical: 5,
   },
 });
 
