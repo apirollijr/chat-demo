@@ -27,6 +27,8 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
+// Firebase Authentication (anonymous login)
+import { signInAnonymouslyRN } from '../firebase';
 
 const Start = ({ navigation }) => {
   // State to store the user's name input
@@ -45,22 +47,32 @@ const Start = ({ navigation }) => {
   ];
 
   /**
-   * Function to handle starting the chat
-   * Validates that the user has entered a name before navigating
-   * Passes both the name and selected color to the Chat screen
+   * Anonymous sign-in then navigate to Chat.
+   * If successful, passes uid, name, and selected background color.
    */
-  const startChat = () => {
-    // Validate that name is not empty (after trimming whitespace)
+  const signInUser = async () => {
     if (name.trim() === '') {
       Alert.alert('Please enter your name', 'You need to enter a name to start chatting.');
       return;
     }
-    
-    // Navigate to chat screen with user data
-    navigation.navigate('Chat', { 
-      name: name.trim(), // Remove any leading/trailing whitespace
-      backgroundColor: selectedColor 
-    });
+
+    try {
+      const result = await signInAnonymouslyRN();
+      const user = result?.user;
+
+      if (user?.uid) {
+        navigation.navigate('Chat', {
+          userId: user.uid,
+          name: name.trim(),
+          backgroundColor: selectedColor,
+        });
+      } else {
+        Alert.alert('Sign-in failed', 'No user returned from authentication.');
+      }
+    } catch (e) {
+      const message = e?.message ?? 'Unknown error';
+      Alert.alert('Unable to sign in', message);
+    }
   };
 
   return (
@@ -106,7 +118,7 @@ const Start = ({ navigation }) => {
           {/* Start Chat Button */}
           <TouchableOpacity
             style={styles.startButton}
-            onPress={startChat}
+            onPress={signInUser}
             accessible={true}
             accessibilityLabel="Start chatting"
             accessibilityRole="button"

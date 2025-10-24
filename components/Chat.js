@@ -22,10 +22,12 @@ import {
   Platform
 } from 'react-native';
 import { GiftedChat } from "react-native-gifted-chat";
+// Firestore realtime query and writes
+import { collection, query, orderBy, onSnapshot, addDoc } from 'firebase/firestore';
 
-const Chat = ({ route, navigation }) => {
-  // Extract the name and backgroundColor from route parameters
-  const { name, backgroundColor } = route.params;
+const Chat = ({ route, navigation, db }) => {
+  // Extract the name, userId, and backgroundColor from route parameters
+  const { name, userId, backgroundColor } = route.params;
   
   // State to store chat messages
   const [messages, setMessages] = useState([]);
@@ -44,36 +46,44 @@ const Chat = ({ route, navigation }) => {
     });
   }, [navigation, name, backgroundColor]);
 
-  // Initialize messages when component mounts
+  // Realtime messages subscription from Firestore
   useEffect(() => {
-    setMessages([
-      // User message (appears first due to reverse chronological order)
-      {
-        _id: 2,
-        text: `Hello! My name is ${name}. I'm excited to start chatting!`,
-        createdAt: new Date(),
-        user: {
-          _id: 1,
-          name: name,
-          avatar: 'https://placeimg.com/140/140/any', // Placeholder avatar
-        },
-      },
-      // System message (appears second due to reverse chronological order)
-      {
-        _id: 1,
-        text: `${name} has entered the chat`,
-        createdAt: new Date(),
-        system: true, // This makes it a system message
-      },
-    ]);
-  }, [name]);
+    if (!db) return; // Safety: wait for db to be available
+
+    const q = query(
+      collection(db, 'messages'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetched = snapshot.docs.map((doc) => {
+        const data = doc.data() || {};
+        const createdAtRaw = data.createdAt;
+        const createdAt = createdAtRaw?.toDate ? createdAtRaw.toDate() : (createdAtRaw || new Date());
+
+        return {
+          _id: doc.id,
+          text: data.text ?? '',
+          createdAt,
+          user: data.user ?? {
+            _id: 1,
+            name,
+            avatar: 'https://placeimg.com/140/140/any',
+          },
+          // preserve system flag if present
+          ...(data.system ? { system: true } : {}),
+        };
+      });
+      setMessages(fetched);
+    });
+
+    return () => unsubscribe();
+  }, [db, name]);
 
   // Callback function to handle sending new messages
   const onSend = useCallback((newMessages = []) => {
-    setMessages(previousMessages => 
-      GiftedChat.append(previousMessages, newMessages)
-    );
-  }, []);
+    addDoc(collection(db, 'messages'), newMessages[0]);
+  }, [db]);
 
   return (
     <View style={[styles.container, { backgroundColor: backgroundColor }]}>
@@ -88,10 +98,11 @@ const Chat = ({ route, navigation }) => {
           messages={messages}
           onSend={messages => onSend(messages)}
           user={{
-            _id: 1,
+            _id: userId,
             name: name,
             avatar: 'https://placeimg.com/140/140/any', // Placeholder avatar
           }}
+          // Firestore database instance is available as `db` prop for future persistence
           // Custom styling for the input toolbar
           textInputStyle={styles.textInput}
           // Placeholder text for the input

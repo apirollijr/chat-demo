@@ -1,6 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 
+// Firebase instances (initialized centrally in firebase.js)
+import { db } from './firebase';
+
 // import the screens
 import Start from './components/Start';
 import Chat from './components/Chat';
@@ -31,10 +34,10 @@ const App = () => {
           component={Start}
           options={{ title: 'Welcome' }}
         />
-        <Stack.Screen
-          name="Chat"
-          component={Chat}
-        />
+        {/* Pass the Firestore database instance to Chat without putting it in navigation state */}
+        <Stack.Screen name="Chat">
+          {(props) => <Chat {...props} db={db} />}
+        </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>
   );
