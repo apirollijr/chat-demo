@@ -19,13 +19,17 @@ import {
   StyleSheet,
   View,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Alert
 } from 'react-native';
-import { GiftedChat } from "react-native-gifted-chat";
+import { GiftedChat, InputToolbar } from "react-native-gifted-chat";
 // Firestore realtime query and writes
 import { collection, query, orderBy, onSnapshot, addDoc } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const Chat = ({ route, navigation, db }) => {
+const MESSAGES_KEY = 'chat_messages';
+
+const Chat = ({ route, navigation, db, isConnected }) => {
   // Extract the name, userId, and backgroundColor from route parameters
   const { name, userId, backgroundColor } = route.params;
   
@@ -46,44 +50,80 @@ const Chat = ({ route, navigation, db }) => {
     });
   }, [navigation, name, backgroundColor]);
 
-  // Realtime messages subscription from Firestore
+  // Load from Firestore when online; otherwise from local cache
   useEffect(() => {
-    if (!db) return; // Safety: wait for db to be available
+    let unsubscribe = () => {};
 
-    const q = query(
-      collection(db, 'messages'),
-      orderBy('createdAt', 'desc')
-    );
+    const loadFromCache = async () => {
+      try {
+        const raw = await AsyncStorage.getItem(MESSAGES_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        const restored = Array.isArray(parsed)
+          ? parsed.map((m) => ({ ...m, createdAt: new Date(m.createdAt) }))
+          : [];
+        setMessages(restored);
+      } catch (e) {
+        if (__DEV__) console.warn('Failed to load cached messages:', e?.message || e);
+      }
+    };
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetched = snapshot.docs.map((doc) => {
-        const data = doc.data() || {};
-        const createdAtRaw = data.createdAt;
-        const createdAt = createdAtRaw?.toDate ? createdAtRaw.toDate() : (createdAtRaw || new Date());
-
-        return {
-          _id: doc.id,
-          text: data.text ?? '',
-          createdAt,
-          user: data.user ?? {
-            _id: 1,
-            name,
-            avatar: 'https://placeimg.com/140/140/any',
-          },
-          // preserve system flag if present
-          ...(data.system ? { system: true } : {}),
-        };
+    const subscribeOnline = () => {
+      if (!db) return;
+      const q = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
+      unsubscribe = onSnapshot(q, async (snapshot) => {
+        const fetched = snapshot.docs.map((doc) => {
+          const data = doc.data() || {};
+          const createdAtRaw = data.createdAt;
+          const createdAt = createdAtRaw?.toDate
+            ? createdAtRaw.toDate()
+            : (createdAtRaw ? new Date(createdAtRaw) : new Date());
+          return {
+            _id: doc.id,
+            text: data.text ?? '',
+            createdAt,
+            user: data.user ?? {
+              _id: 1,
+              name,
+              avatar: 'https://placeimg.com/140/140/any',
+            },
+            ...(data.system ? { system: true } : {}),
+          };
+        });
+        setMessages(fetched);
+        // Cache for offline usage (store serializable form)
+        try {
+          const toCache = fetched.map((m) => ({ ...m, createdAt: m.createdAt?.toISOString?.() || m.createdAt }));
+          await AsyncStorage.setItem(MESSAGES_KEY, JSON.stringify(toCache));
+        } catch (e) {
+          if (__DEV__) console.warn('Failed to cache messages:', e?.message || e);
+        }
       });
-      setMessages(fetched);
-    });
+    };
 
-    return () => unsubscribe();
-  }, [db, name]);
+    if (isConnected) {
+      subscribeOnline();
+    } else {
+      loadFromCache();
+    }
+
+    return () => unsubscribe && unsubscribe();
+  }, [db, name, isConnected]);
 
   // Callback function to handle sending new messages
   const onSend = useCallback((newMessages = []) => {
+    if (!isConnected) {
+      Alert.alert('You are offline', 'Cannot send messages while offline.');
+      return;
+    }
     addDoc(collection(db, 'messages'), newMessages[0]);
-  }, [db]);
+  }, [db, isConnected]);
+
+  // When offline, hide the input toolbar so users cannot compose messages
+  const renderInputToolbar = useCallback((toolbarProps) => {
+    if (!isConnected) return null;
+    return <InputToolbar {...toolbarProps} />;
+  }, [isConnected]);
 
   return (
     <View style={[styles.container, { backgroundColor: backgroundColor }]}>
@@ -97,6 +137,7 @@ const Chat = ({ route, navigation, db }) => {
         <GiftedChat
           messages={messages}
           onSend={messages => onSend(messages)}
+          renderInputToolbar={renderInputToolbar}
           user={{
             _id: userId,
             name: name,

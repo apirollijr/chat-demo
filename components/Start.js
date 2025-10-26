@@ -30,7 +30,7 @@ import {
 // Firebase Authentication (anonymous login)
 import { signInAnonymouslyRN } from '../firebase';
 
-const Start = ({ navigation }) => {
+const Start = ({ navigation, isConnected }) => {
   // State to store the user's name input
   const [name, setName] = useState('');
   
@@ -57,6 +57,17 @@ const Start = ({ navigation }) => {
     }
 
     try {
+      // If offline, skip auth and navigate with a temporary offline user id
+      if (!isConnected) {
+        const offlineId = `offline_${Date.now()}`;
+        navigation.navigate('Chat', {
+          userId: offlineId,
+          name: name.trim(),
+          backgroundColor: selectedColor,
+        });
+        return;
+      }
+
       const result = await signInAnonymouslyRN();
       const user = result?.user;
 
