@@ -40,6 +40,18 @@ A React Native chat application built with Expo, Firebase (Firestore + Storage),
 
 ## Installation
 
+### Prerequisites
+
+- Node.js LTS (18.x or 20.x) and npm
+- Git
+- Expo tooling (used via npx)
+- For Android build/emulator:
+  - Android Studio with a "Google APIs" emulator image (API 33+ recommended)
+  - Android SDK Platform Tools (added to PATH by Android Studio)
+- For iOS (macOS only): Xcode with iOS Simulator
+
+On Windows, install Android Studio and create a Pixel emulator. No separate Java install is needed—Android Studio bundles it.
+
 1. Clone this repository:
 
    ```bash
@@ -92,6 +104,11 @@ service firebase.storage {
 
 Remember to tighten these rules for production.
 
+### Where to put credentials
+
+- Open `firebase.js` and replace the `firebaseConfig` object with your project’s Web app config from Firebase Console (Project settings → General → Your apps → Web app).
+- Ensure the `storageBucket` matches your project’s bucket. The app binds Storage to that exact bucket via `getStorage(app, \`gs://${firebaseConfig.storageBucket}\`)`.
+
 ## Running the App
 
 1. Start the Expo development server:
@@ -100,10 +117,18 @@ Remember to tighten these rules for production.
    npx expo start
    ```
 
-2. Use one of the following methods to run the app:
-   - **Android**: Press `a` to open in Android emulator
-   - **iOS**: Press `i` to open in iOS simulator
-   - **Physical Device**: Scan the QR code with Expo Go app
+2. Choose how to run the app:
+
+   - Expo Go (fastest):
+     - Android: Press `a` to open in Expo Go on the emulator
+     - iOS: Press `i` to open in iOS Simulator with Expo Go
+   - Native build (standalone dev client):
+     - Android: `npm run android` (runs `expo run:android`, uses Android Studio)
+     - iOS (macOS): `npm run ios`
+
+3. Smoke test features:
+   - Select or take a photo → image bubble appears
+   - Share location → map bubble appears with a marker
 
 ## Project Structure
 
