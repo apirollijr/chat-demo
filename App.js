@@ -1,9 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 
 // Firebase instances (initialized centrally in firebase.js)
-import { db } from './firebase';
+import { db, storage } from './firebase';
 import { enableNetwork, disableNetwork } from 'firebase/firestore';
 import { useNetInfo } from '@react-native-community/netinfo';
 
@@ -15,6 +15,8 @@ import Chat from './components/Chat';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+
+
 const Stack = createNativeStackNavigator();
 
 const App = () => {
@@ -25,7 +27,7 @@ const App = () => {
     const reachable = netInfo.isInternetReachable;
     return Boolean(netInfo.isConnected && (reachable === undefined || reachable));
   }, [netInfo.isConnected, netInfo.isInternetReachable]);
-
+  // removed duplicate immediate smoke test; handled below in dev-only effect
   // Toggle Firestore network based on connectivity
   useEffect(() => {
     let cancelled = false;
@@ -46,6 +48,8 @@ const App = () => {
     };
   }, [isConnected]);
 
+  // Dev-only storage smoke test removed to avoid early Auth initialization races.
+
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -65,7 +69,7 @@ const App = () => {
         </Stack.Screen>
         {/* Pass the Firestore database instance to Chat without putting it in navigation state */}
         <Stack.Screen name="Chat">
-          {(props) => <Chat {...props} db={db} isConnected={isConnected} />}
+          {(props) => <Chat {...props} db={db} storage={storage} isConnected={isConnected} />}
         </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>

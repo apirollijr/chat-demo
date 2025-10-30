@@ -3,6 +3,10 @@
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+import { getAuth, signInAnonymously } from 'firebase/auth';
+// Ensure the Auth component is registered in environments where tree-shaking might drop side effects
+import 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
@@ -12,6 +16,7 @@ const firebaseConfig = {
     apiKey: 'AIzaSyCbIcNchiv4hdf3rxX4Eu6EF7oTfXhp6IA',
     authDomain: 'chat-demo-502d3.firebaseapp.com',
     projectId: 'chat-demo-502d3',
+    // Bucket per your Firebase project settings
     storageBucket: 'chat-demo-502d3.firebasestorage.app',
     messagingSenderId: '79173417817',
     appId: '1:79173417817:web:df64f14e0ee659fee16a48',
@@ -23,41 +28,28 @@ export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 // Feature SDKs bound to this app instance
 export const db = getFirestore(app);
+// Force the exact bucket to avoid dev hot-reload config mismatch
+export const storage = getStorage(app, `gs://${firebaseConfig.storageBucket}`);
+export const storageBucketName = firebaseConfig.storageBucket;
 
-// Single, unified dynamic import for the Auth module to avoid duplicate module instances.
-let authModulePromise;
-const getAuthModule = () => {
-    if (!authModulePromise) {
-        authModulePromise = import('firebase/auth');
+// Initialize or reuse a singleton Auth instance
+let authInstance;
+export const getAuthInstance = () => {
+    if (!authInstance) {
+        // Use simple modular getAuth for maximum RN compatibility
+        authInstance = getAuth(app);
     }
-    return authModulePromise;
-};
-
-// Async getter to ensure the module is loaded and the provider registered before returning the instance
-export const getAuthInstance = async () => {
-    const { getAuth, initializeAuth, getReactNativePersistence } = await getAuthModule();
-
-    if (Platform.OS !== 'web') {
-        try {
-            return initializeAuth(app, {
-                persistence: getReactNativePersistence(AsyncStorage),
-            });
-        } catch (e) {
-            return getAuth(app);
-        }
-    }
-    return getAuth(app);
+    return authInstance;
 };
 
 // Convenience helper for anonymous sign-in used by Start screen
 export const signInAnonymouslyRN = async () => {
     try {
-        const { signInAnonymously } = await getAuthModule();
-        const auth = await getAuthInstance();
+        const auth = getAuthInstance();
         return await signInAnonymously(auth);
     } catch (e) {
         // Fallback to compat API in case of provider registration issues in the bundler
-        console.warn('[firebase] modular auth failed, falling back to compat:', e?.message || e);
+        if (__DEV__) console.warn('[firebase] modular auth failed, falling back to compat:', e?.message || e);
         const compat = await import('firebase/compat/app');
         await import('firebase/compat/auth');
         const firebaseCompat = compat.default || compat;

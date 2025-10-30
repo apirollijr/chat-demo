@@ -36,6 +36,7 @@ A React Native chat application built with Expo and React Navigation. This app a
 - **Gifted Chat**: Complete chat UI and functionality library
 - **React Hooks**: useState, useEffect, and useCallback for state management
 - **KeyboardAvoidingView**: Cross-platform keyboard handling
+- **Firebase**: Firestore for chat messages; Cloud Storage connected for media uploads
 
 ## Installation
 
@@ -53,10 +54,43 @@ A React Native chat application built with Expo and React Navigation. This app a
    ```
 
 3. Install required packages:
+
    ```bash
    npx expo install react-native-screens react-native-safe-area-context
    npm install react-native-gifted-chat --save
    ```
+
+4. Install media, location, and maps packages (Expo managed):
+   ```powershell
+   # Match versions to your Expo SDK automatically
+   npx expo install expo-image-picker expo-location react-native-maps
+   ```
+
+## Firebase setup (Firestore + Storage)
+
+1. In Firebase Console, create a project (or use your existing one) and add a Web app to get the config.
+2. Copy your Web config into `firebase.js` (replace the placeholder values if needed).
+3. Enable Cloud Firestore and Cloud Storage in the Console.
+4. Verify your Storage bucket. In most projects the default is `<projectId>.appspot.com`. If uploads fail and your bucket differs from `firebaseConfig.storageBucket`, update it accordingly.
+
+This app already initializes Firestore and connects Cloud Storage using `getStorage(app)`. The instances are exported from `firebase.js` and passed down to screens.
+
+### Storage security rules (development)
+
+For quick local testing you can temporarily allow authenticated users to read/write:
+
+```text
+rules_version = '2';
+service firebase.storage {
+   match /b/{bucket}/o {
+      match /{allPaths=**} {
+         allow read, write: if request.auth != null;
+      }
+   }
+}
+```
+
+Remember to tighten these rules for production.
 
 ## Running the App
 

@@ -23,13 +23,15 @@ import {
   Alert
 } from 'react-native';
 import { GiftedChat, InputToolbar } from "react-native-gifted-chat";
+import MapView, { Marker } from 'react-native-maps';
+import CustomActions from './CustomActions';
 // Firestore realtime query and writes
 import { collection, query, orderBy, onSnapshot, addDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MESSAGES_KEY = 'chat_messages';
 
-const Chat = ({ route, navigation, db, isConnected }) => {
+const Chat = ({ route, navigation, db, storage, isConnected }) => {
   // Extract the name, userId, and backgroundColor from route parameters
   const { name, userId, backgroundColor } = route.params;
   
@@ -87,6 +89,8 @@ const Chat = ({ route, navigation, db, isConnected }) => {
               name,
               avatar: 'https://placeimg.com/140/140/any',
             },
+            ...(data.image ? { image: data.image } : {}),
+            ...(data.location ? { location: data.location } : {}),
             ...(data.system ? { system: true } : {}),
           };
         });
@@ -125,6 +129,39 @@ const Chat = ({ route, navigation, db, isConnected }) => {
     return <InputToolbar {...toolbarProps} />;
   }, [isConnected]);
 
+  // Render an action button inside the input that opens a custom ActionSheet
+  const renderActions = useCallback(() => {
+    if (!isConnected) return null;
+    return (
+      <CustomActions
+        storage={storage}
+        onSend={onSend}
+        user={{ _id: userId, name }}
+        isConnected={isConnected}
+      />
+    );
+  }, [isConnected, storage, onSend, userId, name]);
+
+  // Render a map bubble for location messages
+  const renderCustomView = useCallback((props) => {
+    const { currentMessage } = props;
+    const loc = currentMessage?.location;
+    if (!loc?.latitude || !loc?.longitude) return null;
+    const region = {
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    };
+    return (
+      <View style={styles.mapContainer}>
+        <MapView style={styles.map} region={region} scrollEnabled={false} zoomEnabled={false}>
+          <Marker coordinate={{ latitude: loc.latitude, longitude: loc.longitude }} />
+        </MapView>
+      </View>
+    );
+  }, []);
+
   return (
     <View style={[styles.container, { backgroundColor: backgroundColor }]}>
       {/* KeyboardAvoidingView ensures the keyboard doesn't cover the input field */}
@@ -138,6 +175,8 @@ const Chat = ({ route, navigation, db, isConnected }) => {
           messages={messages}
           onSend={messages => onSend(messages)}
           renderInputToolbar={renderInputToolbar}
+          renderActions={renderActions}
+          renderCustomView={renderCustomView}
           user={{
             _id: userId,
             name: name,
@@ -180,6 +219,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     marginHorizontal: 10,
     marginVertical: 5,
+  },
+
+  mapContainer: {
+    width: 150,
+    height: 100,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginTop: 5,
+  },
+  map: {
+    flex: 1,
   },
 });
 
